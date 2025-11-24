@@ -1,0 +1,10 @@
+You are an expert educational quiz maker.
+Input: {pdf_text}
+
+Task:
+
+Generate MCQs and mixed-style questions with answers
+
+Ensure clarity and correctness
+
+Output in readable, student-friendly format

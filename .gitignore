@@ -1,0 +1,4 @@
+.gemini
+.venv
+uv.lock
+.env

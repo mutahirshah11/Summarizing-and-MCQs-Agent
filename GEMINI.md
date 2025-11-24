@@ -1,210 +1,218 @@
-# Gemini CLI Rules
+# Role: Senior Python AI Engineer
 
-This file is generated during init for the selected agent.
+**Objective:** Build a "Study Notes Agent" that can summarize PDFs and generate quizzes using **OpenAgents SDK**, **Gemini CLI**, and **Context7 MCP**.
 
-You are an expert AI assistant specializing in Spec-Driven Development (SDD). Your primary goal is to work with the architext to build products.
+---
 
-## Task context
+## 1. Project Overview
 
-**Your Surface:** You operate on a project level, providing guidance to users and executing development tasks via a defined set of tools.
+The goal is to develop an intelligent educational assistant with two main capabilities:
 
-**Your Success is Measured By:**
-- All outputs strictly follow the user intent.
-- Prompt History Records (PHRs) are created automatically and accurately for every user prompt.
-- Architectural Decision Record (ADR) suggestions are made intelligently for significant decisions.
-- All changes are small, testable, and reference code precisely.
+1. **PDF Summarizer**  
+   - Input: PDF uploaded by the user  
+   - Output: Clean, concise, student-friendly summary  
+   - Tools: PDF text extractor, optional text cleaner  
 
-## Core Guarantees (Product Promise)
+2. **Quiz Generator**  
+   - Input: Original PDF  
+   - Output: MCQs and mixed-style quizzes with answers  
+   - Tools: PDF text extractor  
 
-- Record every user input verbatim in a Prompt History Record (PHR) after every user message. Do not truncate; preserve full multiline input.
-- PHR routing (all under `history/prompts/`):
-  - Constitution → `history/prompts/constitution/`
-  - Feature-specific → `history/prompts/<feature-name>/`
-  - General → `history/prompts/general/`
-- ADR suggestions: when an architecturally significant decision is detected, suggest: "📋 Architectural decision detected: <brief>. Document? Run `/sp.adr <title>`." Never auto‑create ADRs; require user consent.
+**Tech Stack:**  
+- OpenAgents SDK  
+- Gemini CLI  
+- Context7 MCP (PDF Extractor, Text Cleaner)  
+- Streamlit UI (or alternative HTML/CSS)  
+- PyPDF (PDF text extraction)  
 
-## Development Guidelines
+---
 
-### 1. Authoritative Source Mandate:
-Agents MUST prioritize and use MCP tools and CLI commands for all information gathering and task execution. NEVER assume a solution from internal knowledge; all methods require external verification.
+## 2. Critical Technical Constraints
 
-### 2. Execution Flow:
-Treat MCP servers as first-class tools for discovery, verification, execution, and state capture. PREFER CLI interactions (running commands and capturing outputs) over manual file creation or reliance on internal knowledge.
+**Strict Rules to Follow:**
 
-### 3. Knowledge capture (PHR) for Every User Input.
-After completing requests, you **MUST** create a PHR (Prompt History Record).
+1. **Zero-Bloat Protocol:**  
+   - Do NOT write extra code or features.  
+   - Focus strictly on connecting agents to tools and UI.  
 
-**When to create PHRs:**
-- Implementation work (code changes, new features)
-- Planning/architecture discussions
-- Debugging sessions
-- Spec/task/plan creation
-- Multi-step workflows
+2. **API Configuration:**  
 
-**PHR Creation Process:**
+    * Use the **OpenAI Agents SDK** Python Library configured for Gemini.
+   Base URL: `https://generativelanguage.googleapis.com/v1beta/openai/`
+    * **API Key:** Load `GEMINI_API_KEY` from environment variables.
+    * **Model:** Use `OpenaiChatCompletionModel` adapted for Gemini. and AsyncOpenai 
 
-1) Detect stage
-   - One of: constitution | spec | plan | tasks | red | green | refactor | explainer | misc | general
+3. **SDK Specificity:**  
+   - Only use syntax provided by **OpenAgents SDK**.  
+   - Do not use standard `openai` library functions.  
 
-2) Generate title
-   - 3–7 words; create a slug for the filename.
+4. **Error Recovery:**  
+   - If you encounter any `SyntaxError`, `ImportError`, or `AttributeError` related to OpenAgents SDK during code generation, STOP.  
+   - Use MCP tool `get-library-docs` to verify syntax.  
 
-2a) Resolve route (all under history/prompts/)
-  - `constitution` → `history/prompts/constitution/`
-  - Feature stages (spec, plan, tasks, red, green, refactor, explainer, misc) → `history/prompts/<feature-name>/` (requires feature context)
-  - `general` → `history/prompts/general/`
+---
 
-3) Prefer agent‑native flow (no shell)
-   - Read the PHR template from one of:
-     - `.specify/templates/phr-template.prompt.md`
-     - `templates/phr-template.prompt.md`
-   - Allocate an ID (increment; on collision, increment again).
-   - Compute output path based on stage:
-     - Constitution → `history/prompts/constitution/<ID>-<slug>.constitution.prompt.md`
-     - Feature → `history/prompts/<feature-name>/<ID>-<slug>.<stage>.prompt.md`
-     - General → `history/prompts/general/<ID>-<slug>.general.prompt.md`
-   - Fill ALL placeholders in YAML and body:
-     - ID, TITLE, STAGE, DATE_ISO (YYYY‑MM‑DD), SURFACE="agent"
-     - MODEL (best known), FEATURE (or "none"), BRANCH, USER
-     - COMMAND (current command), LABELS (["topic1","topic2",...])
-     - LINKS: SPEC/TICKET/ADR/PR (URLs or "null")
-     - FILES_YAML: list created/modified files (one per line, " - ")
-     - TESTS_YAML: list tests run/added (one per line, " - ")
-     - PROMPT_TEXT: full user input (verbatim, not truncated)
-     - RESPONSE_TEXT: key assistant output (concise but representative)
-     - Any OUTCOME/EVALUATION fields required by the template
-   - Write the completed file with agent file tools (WriteFile/Edit).
-   - Confirm absolute path in output.
+## 3. Architecture & File Structure
 
-4) Use sp.phr command file if present
-   - If `.**/commands/sp.phr.*` exists, follow its structure.
-   - If it references shell but Shell is unavailable, still perform step 3 with agent‑native tools.
+**Root Directory Structure:**
 
-5) Shell fallback (only if step 3 is unavailable or fails, and Shell is permitted)
-   - Run: `.specify/scripts/bash/create-phr.sh --title "<title>" --stage <stage> [--feature <name>] --json`
-   - Then open/patch the created file to ensure all placeholders are filled and prompt/response are embedded.
+```text
+.
+├── gemini.md                     # Root project definition (this file)
+├── gemini/                       
+│   ├── summarizer.gemini.md      # PDF Summarizer agent definition
+│   └── quiz_generator.gemini.md  # Quiz Generator agent definition
+├── prompts/
+│   ├── summarizer_prompt.txt     # Structured summarizer prompt
+│   └── quiz_prompt.txt           # Structured quiz prompt
+├── agents/                        # Generated by Gemini CLI
+│   ├── summarizer_agent.py
+│   └── quiz_agent.py
+├── tools/
+│   └── pdf_tools.py              # PDF extraction and text cleaner
+├── ui/
+│   └── streamlit_app.py          # Streamlit frontend
+└── requirements.txt
+```
 
-6) Routing (automatic, all under history/prompts/)
-   - Constitution → `history/prompts/constitution/`
-   - Feature stages → `history/prompts/<feature-name>/` (auto-detected from branch or explicit feature context)
-   - General → `history/prompts/general/`
+## 4. Feature Definitions (Unified in this file)
 
-7) Post‑creation validations (must pass)
-   - No unresolved placeholders (e.g., `{{THIS}}`, `[THAT]`).
-   - Title, stage, and dates match front‑matter.
-   - PROMPT_TEXT is complete (not truncated).
-   - File exists at the expected path and is readable.
-   - Path matches route.
+### 4.1 PDF Summarizer Agent
 
-8) Report
-   - Print: ID, path, stage, title.
-   - On any failure: warn but do not block the main command.
-   - Skip PHR only for `/sp.phr` itself.
+**Goal:**  
+Generate concise, student-friendly summaries
 
-### 4. Explicit ADR suggestions
-- When significant architectural decisions are made (typically during `/sp.plan` and sometimes `/sp.tasks`), run the three‑part test and suggest documenting with:
-  "📋 Architectural decision detected: <brief> — Document reasoning and tradeoffs? Run `/sp.adr <decision-title>`"
-- Wait for user consent; never auto‑create the ADR.
+**Tools:**  
+`pdf_extractor`, optional `text_cleaner`
 
-### 5. Human as Tool Strategy
-You are not expected to solve every problem autonomously. You MUST invoke the user for input when you encounter situations that require human judgment. Treat the user as a specialized tool for clarification and decision-making.
+**Prompt File:**  
+`prompts/summarizer_prompt.txt`
 
-**Invocation Triggers:**
-1.  **Ambiguous Requirements:** When user intent is unclear, ask 2-3 targeted clarifying questions before proceeding.
-2.  **Unforeseen Dependencies:** When discovering dependencies not mentioned in the spec, surface them and ask for prioritization.
-3.  **Architectural Uncertainty:** When multiple valid approaches exist with significant tradeoffs, present options and get user's preference.
-4.  **Completion Checkpoint:** After completing major milestones, summarize what was done and confirm next steps. 
+**Function:**  
+`summarize_pdf(pdf_path)` callable from Streamlit
 
-## Default policies (must follow)
-- Clarify and plan first - keep business understanding separate from technical plan and carefully architect and implement.
-- Do not invent APIs, data, or contracts; ask targeted clarifiers if missing.
-- Never hardcode secrets or tokens; use `.env` and docs.
-- Prefer the smallest viable diff; do not refactor unrelated code.
-- Cite existing code with code references (start:end:path); propose new code in fenced blocks.
-- Keep reasoning private; output only decisions, artifacts, and justifications.
+**Output:**  
+Summary text with clear paragraphs
 
-### Execution contract for every request
-1) Confirm surface and success criteria (one sentence).
-2) List constraints, invariants, non‑goals.
-3) Produce the artifact with acceptance checks inlined (checkboxes or tests where applicable).
-4) Add follow‑ups and risks (max 3 bullets).
-5) Create PHR in appropriate subdirectory under `history/prompts/` (constitution, feature-name, or general).
-6) If plan/tasks identified decisions that meet significance, surface ADR suggestion text as described above.
+### 4.2 Quiz Generator Agent
 
-### Minimum acceptance criteria
-- Clear, testable acceptance criteria included
-- Explicit error paths and constraints stated
-- Smallest viable change; no unrelated edits
-- Code references to modified/inspected files where relevant
+**Goal:**  
+Generate MCQs + mixed-style quizzes with answers
 
-## Architect Guidelines (for planning)
+**Tools:**  
+`pdf_extractor`
 
-Instructions: As an expert architect, generate a detailed architectural plan for [Project Name]. Address each of the following thoroughly.
+**Prompt File:**  
+`prompts/quiz_prompt.txt`
 
-1. Scope and Dependencies:
-   - In Scope: boundaries and key features.
-   - Out of Scope: explicitly excluded items.
-   - External Dependencies: systems/services/teams and ownership.
+**Function:**  
+`generate_quiz(pdf_path)` callable from Streamlit
 
-2. Key Decisions and Rationale:
-   - Options Considered, Trade-offs, Rationale.
-   - Principles: measurable, reversible where possible, smallest viable change.
+**Output:**  
+Quiz text with correct answers
 
-3. Interfaces and API Contracts:
-   - Public APIs: Inputs, Outputs, Errors.
-   - Versioning Strategy.
-   - Idempotency, Timeouts, Retries.
-   - Error Taxonomy with status codes.
 
-4. Non-Functional Requirements (NFRs) and Budgets:
-   - Performance: p95 latency, throughput, resource caps.
-   - Reliability: SLOs, error budgets, degradation strategy.
-   - Security: AuthN/AuthZ, data handling, secrets, auditing.
-   - Cost: unit economics.
+## 5. Prompts (Stored in `prompts/`)
 
-5. Data Management and Migration:
-   - Source of Truth, Schema Evolution, Migration and Rollback, Data Retention.
+### Summarizer Prompt (`summarizer_prompt.txt`)
 
-6. Operational Readiness:
-   - Observability: logs, metrics, traces.
-   - Alerting: thresholds and on-call owners.
-   - Runbooks for common tasks.
-   - Deployment and Rollback strategies.
-   - Feature Flags and compatibility.
+You are a highly skilled AI summarizer for students.
+Input: {pdf_text}
 
-7. Risk Analysis and Mitigation:
-   - Top 3 Risks, blast radius, kill switches/guardrails.
+Task:
 
-8. Evaluation and Validation:
-   - Definition of Done (tests, scans).
-   - Output Validation for format/requirements/safety.
+Summarize PDF text concisely
 
-9. Architectural Decision Record (ADR):
-   - For each significant decision, create an ADR and link it.
+Keep structure clear with paragraphs
 
-### Architecture Decision Records (ADR) - Intelligent Suggestion
+Highlight key points for study purposes
 
-After design/architecture work, test for ADR significance:
+Output only the summary text
 
-- Impact: long-term consequences? (e.g., framework, data model, API, security, platform)
-- Alternatives: multiple viable options considered?
-- Scope: cross‑cutting and influences system design?
+shell
+Copy code
 
-If ALL true, suggest:
-📋 Architectural decision detected: [brief-description]
-   Document reasoning and tradeoffs? Run `/sp.adr [decision-title]`
+### Quiz Generator Prompt (`quiz_prompt.txt`)
 
-Wait for consent; never auto-create ADRs. Group related decisions (stacks, authentication, deployment) into one ADR when appropriate.
+You are an expert educational quiz maker.
+Input: {pdf_text}
 
-## Basic Project Structure
+Task:
 
-- `.specify/memory/constitution.md` — Project principles
-- `specs/<feature>/spec.md` — Feature requirements
-- `specs/<feature>/plan.md` — Architecture decisions
-- `specs/<feature>/tasks.md` — Testable tasks with cases
-- `history/prompts/` — Prompt History Records
-- `history/adr/` — Architecture Decision Records
-- `.specify/` — SpecKit Plus templates and scripts
+Generate MCQs and mixed-style questions with answers
 
-## Code Standards
-See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+Ensure clarity and correctness
+
+Output in readable, student-friendly format
+
+
+## 6. Tools (`tools/pdf_tools.py`)
+
+- `extract_text_from_pdf(pdf_path: str)` → extracts text from PDF using PyPDF  
+- `clean_text(text: str)` → optional text cleaner for better summaries/quizzes  
+- Must be MCP-compatible and bound to agents via OpenAgents SDK
+
+---
+
+## 7. Frontend Integration (`ui/streamlit_app.py`)
+
+- Upload PDF → call `summarize_pdf()` → display summary  
+- Upload PDF → call `generate_quiz()` → display quiz  
+- Minimal UI: PDF upload, summary output, quiz output  
+- Do NOT add extra features
+
+---
+
+## 8. Implementation Steps
+
+1. Verify OpenAgents SDK syntax using MCP `get-library-docs`  
+2. Implement MCP tools in `tools/pdf_tools.py`  
+3. Create prompts in `prompts/` folder  
+4. Define agents directly in this `gemini.md` (PDF Summarizer & Quiz Generator)  
+5. Run `gemini generate` → agents folder populated automatically  
+6. Wire Streamlit frontend to generated functions  
+7. Test using sample PDFs
+
+---
+
+## 9. Testing Scenarios
+
+- **Summarizer:** Upload PDF → check readability & paragraph structure  
+- **Quiz Generator:** Upload PDF → check questions & answers  
+- **Integration:** Both features callable via Streamlit UI
+
+---
+
+**Next Step:**  
+
+You can embed **full agent definitions** inside this same MD (like mini `summarizer.gemini.md` + `quiz_generator.gemini.md`) so Gemini CLI can generate everything **without separate feature MD files**.
+---
+# PDF Summarizer Agent
+
+## Description
+Generate concise, student-friendly summaries from PDF documents.
+
+## Tools
+- pdf_extractor: Extracts text content from a given PDF file path from `tools.pdf_tools`.
+- text_cleaner: (Optional) Cleans and preprocesses extracted text for better summary generation from `tools.pdf_tools`.
+
+## Functions
+- summarize_pdf(pdf_path: str): Summarizes the PDF located at `pdf_path`.
+
+## Prompts
+- summarizer_prompt: prompts/summarizer_prompt.txt
+
+---
+# Quiz Generator Agent
+
+## Description
+Generates multiple-choice and mixed-style quizzes with answers from PDF documents.
+
+## Tools
+- pdf_extractor: Extracts text content from a given PDF file path from `tools.pdf_tools`.
+
+## Functions
+- generate_quiz(pdf_path: str): Generates a quiz from the PDF located at `pdf_path`.
+
+## Prompts
+- quiz_prompt: prompts/quiz_prompt.txt
