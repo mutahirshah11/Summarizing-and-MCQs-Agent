@@ -54,6 +54,8 @@ if uploaded_file is not None:
         if st.button("Generate Quiz"):
             with st.spinner("Generating quiz... This may take a moment."):
                 try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
                     quiz = generate_quiz(file_path)
                     st.subheader("Quiz:")
                     st.write(quiz)
